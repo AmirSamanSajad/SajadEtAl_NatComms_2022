@@ -1,0 +1,31 @@
+function perTrial_restricted_pdf_element = toneRulePDFextract( trialInfo , indexFlip_flag)
+% This code takes in trialInfo for a session and also the possible tone
+% times based on the Ttone = 1500 - SSD rule.
+
+%%%%%%%%%%
+SSDlist = unique( trialInfo.SSD ); SSDlist( isnan(SSDlist) ) = [];       % This is just the set of SSDs used in this study.
+xC_trl = find( trialInfo.trlFlag_canceled == 1);  % xC means, all canceled trials irrespective of what the previous trial is (x means it can be anything).
+xNC_trl = find( trialInfo.trlFlag_NCerror == 1  | trialInfo.trlFlag_NCpremature == 1 );   % xNC means non-canceled trials irrespective of the preceding trial.
+xNCerror_trl = find( trialInfo.trlFlag_NCerror == 1 );   % xNC means non-canceled error (NCerror) trials irrespective of the preceding trial.
+xNoStop_trl = find( trialInfo.trlFlag_noStop == 1 );  % all no-stop trials irrespective of trial history (previous trial denotated by x)
+xStopSignal_trl = find( trialInfo.trlFlag_canceled == 1 | trialInfo.trlFlag_NCerror == 1 | trialInfo.trlFlag_NCpremature == 1 );  % all stop-signal trials irrespective of sub-type
+xSSseen_trl = find( trialInfo.trlFlag_canceled == 1 | trialInfo.trlFlag_NCerror == 1 );  % all stop-signal trials in which SS is seen! irrespective of sub-type
+nc_C_trl = xC_trl( ismember(xC_trl, (xNC_trl+1)) ) ;
+ncerror_C_trl = xC_trl( ismember(xC_trl, (xNCerror_trl+1)) ) ;
+c_C_trl = xC_trl( ismember(xC_trl, (xC_trl+1)) ) ;
+
+perTrial_restricted_pdf_element = zeros( numel(xC_trl), numel(SSDlist) );
+toneRuleTrials = xC_trl;
+
+for ii = 1:numel(toneRuleTrials) % for each of these trials do:
+    currTrial = toneRuleTrials(ii);
+    trialIdx_in_output = find( xC_trl == currTrial );
+    experiencedSSD = trialInfo.SSD( currTrial );
+    experiencedSSD_idx =  find( SSDlist == experiencedSSD ); % find the SSD index on previous trial (not SSDbin):
+    if strcmpi(indexFlip_flag, 'none' ) == 1
+        perTrial_restricted_pdf_element( trialIdx_in_output, experiencedSSD_idx )  = 1;
+    elseif strcmpi( indexFlip_flag, 'flip') == 1
+        perTrial_restricted_pdf_element( trialIdx_in_output, (numel(SSDlist) - experiencedSSD_idx) + 1 )  = 1;
+    end
+end
+
